@@ -97,4 +97,7 @@ if 'user' in st.session_state:
     if not logs_df.empty:
         st.dataframe(logs_df)
         st.line_chart(logs_df.set_index('Дата')['Вага'])
-        st.bar_chart(logs_df.set_index('Дата')['Активність
+        st.bar_chart(logs_df.set_index('Дата')['Активність'])
+
+else:
+    st.warning('Будь ласка, авторизуйтесь або зареєструйтесь через бокову панель.')
