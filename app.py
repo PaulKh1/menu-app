@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
 
 # Конфігурація сторінки
 st.set_page_config(page_title='Меню харчування', layout='wide')
 
 # Вибір теми
+st.sidebar.header('Налаштування')
 theme = st.sidebar.radio('🌗 Обери тему:', ['Світла', 'Темна'])
 if theme == 'Темна':
     st.markdown("""
@@ -14,7 +16,7 @@ if theme == 'Темна':
     </style>
     """, unsafe_allow_html=True)
 
-# Завантаження меню (UTF-8 з BOM для української мови)
+# Завантаження меню
 menu = pd.read_csv('Харчування.csv', encoding='utf-8-sig').dropna()
 
 st.title('🍽️ Меню для Павла та Наталі 📅')
@@ -34,13 +36,16 @@ def extract_calories(text):
 filtered_menu['Калорії (Павло)'] = filtered_menu['Страва (рецепт, калорії, техкарта)'].apply(extract_calories)
 filtered_menu['Калорії (Наталя)'] = (filtered_menu['Калорії (Павло)'] * 0.8).astype(int)
 
-# Відображення меню з емодзі
+# Відображення меню з фото
 for _, row in filtered_menu.iterrows():
     emoji = '🍳' if 'Сніданок' in row['Час прийому їжі'] else ('🍲' if 'Обід' in row['Час прийому їжі'] else '🥗')
     with st.expander(f"{emoji} {row['Час прийому їжі']}"):
         st.write(f"**Рецепт:** {row['Страва (рецепт, калорії, техкарта)']}")
         st.write(f"**Павло:** {row['Порція для чоловіка']} ({row['Калорії (Павло)']} ккал)")
         st.write(f"**Наталя:** {row['Порція для дружини']} ({row['Калорії (Наталя)']} ккал)")
+        photo = st.file_uploader(f'Завантаж фото страви ({row["Час прийому їжі"]})', type=['png', 'jpg'])
+        if photo:
+            st.image(photo)
 
 # Окремі графіки калорійності
 col1, col2 = st.columns(2)
@@ -89,3 +94,17 @@ if not st.session_state.log_df.empty:
     st.dataframe(st.session_state.log_df)
     st.line_chart(st.session_state.log_df.set_index('Дата')['Вага'])
     st.bar_chart(st.session_state.log_df.set_index('Дата')['Активність'])
+
+# Список покупок
+st.header('🛒 Автоматичний список покупок на тиждень')
+if st.button('📝 Створити список покупок'):
+    products = filtered_menu['Страва (рецепт, калорії, техкарта)'].str.extractall(r'([А-Яа-яЇїІіЄєҐґ\w]+) \d+ ?г?').drop_duplicates()[0]
+    st.write(products.tolist())
+
+# Push-сповіщення
+st.sidebar.header('🔔 Push-сповіщення про прийоми їжі')
+notify = st.sidebar.checkbox('Активувати нагадування')
+if notify:
+    meal_times = filtered_menu['Час прийому їжі'].tolist()
+    for time in meal_times:
+        st.sidebar.info(f'Не забудь про {time}!')
