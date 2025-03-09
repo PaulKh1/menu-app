@@ -29,8 +29,18 @@ edited_menu = st.data_editor(filtered_menu)
 
 # Графік калорійності
 st.subheader('📊 Калорійність страв')
-calories_man = filtered_menu['Порція для чоловіка'].str.extract(r'(\d+)').astype(float)
-calories_woman = filtered_menu['Порція для дружини'].str.extract(r'(\d+)').astype(float)
+# Функція для витягування калорій з тексту
+def extract_calories(text):
+    import re
+    matches = re.findall(r'(\\d+)\\s?ккал', text)
+    return sum(map(int, matches)) if matches else 0
+
+# Підрахунок калорій для чоловіка та дружини
+filtered_menu['Калорії (чоловік)'] = filtered_menu['Страва (рецепт, калорії, техкарта)'].apply(extract_calories)
+filtered_menu['Калорії (дружина)'] = filtered_menu['Калорії (чоловік)'] * 0.8  # орієнтовно -20%
+
+# Відображення графіка
+st.bar_chart(filtered_menu.set_index('Час прийому їжі')[['Калорії (чоловік)', 'Калорії (дружина)']])
 
 st.bar_chart(pd.DataFrame({
     'Чоловік': calories_man[0],
