@@ -33,10 +33,6 @@ def login(username, password):
     c.execute('SELECT * FROM users WHERE username=? AND password=?', (username, hashed_password))
     return c.fetchone()
 
-# Стан авторизації
-if 'user' not in st.session_state:
-    st.session_state['user'] = None
-
 # Авторизація та реєстрація
 st.sidebar.header('🔐 Авторизація')
 auth_mode = st.sidebar.radio('Оберіть дію:', ['Вхід', 'Реєстрація'])
@@ -45,11 +41,18 @@ username = st.sidebar.text_input('Ім\'я користувача:')
 password = st.sidebar.text_input('Пароль:', type='password')
 
 if st.sidebar.button('Підтвердити'):
-    if login(username, password) if login_mode == 'Вхід' else create_user(username, password):
-        st.session_state['user'] = username
-        st.sidebar.success('Успішно!')
+    if auth_mode == 'Вхід':
+        if login(username, password):
+            st.session_state['user'] = username
+            st.sidebar.success('Успішний вхід!')
+        else:
+            st.sidebar.error('Невірний логін або пароль')
     else:
-        st.sidebar.error('Помилка авторизації або реєстрації')
+        if create_user(username, password):
+            st.session_state['user'] = username
+            st.sidebar.success('Успішна реєстрація!')
+        else:
+            st.sidebar.error('Користувач вже існує')
 
 if 'user' in st.session_state:
     st.success(f"Вітаємо, {st.session_state['user']}!")
@@ -99,5 +102,10 @@ if 'user' in st.session_state:
         st.line_chart(logs_df.set_index('Дата')['Вага'])
         st.bar_chart(logs_df.set_index('Дата')['Активність'])
 
+    # Push-нагадування
+    st.sidebar.header('🔔 Нагадування про прийоми їжі')
+    if st.sidebar.checkbox('Активувати нагадування'):
+        for meal in filtered_menu['Час прийому їжі'].unique():
+            st.sidebar.info(f'Час їсти: {meal}')
 else:
     st.warning('Будь ласка, авторизуйтесь або зареєструйтесь через бокову панель.')
