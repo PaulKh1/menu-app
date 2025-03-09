@@ -25,7 +25,7 @@ st.dataframe(filtered_menu[['Час прийому їжі', 'Страва (ре�
 
 # Редагування меню
 st.subheader('✏️ Редагувати меню')
-edited_menu = st.experimental_data_editor(filtered_menu)
+edited_menu = st.data_editor(filtered_menu)
 
 # Графік калорійності
 st.subheader('📊 Калорійність страв')
