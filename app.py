@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
 import re
 
 # Конфігурація сторінки
@@ -66,12 +65,10 @@ activity_log = st.slider('🏃‍♂️ Фізична активність (х�
 
 if st.button('➕ Додати запис'):
     new_record = {'Дата': pd.to_datetime(date), 'Вага': weight_log, 'Активність': activity_log}
-    if 'log_df' not in st.session_state:
-        st.session_state.log_df = pd.DataFrame(columns=['Дата', 'Вага', 'Активність'])
     st.session_state.log_df = pd.concat([st.session_state.log_df, pd.DataFrame([new_record])], ignore_index=True)
     st.success('✅ Запис додано!')
 
-if 'log_df' in st.session_state:
+if not st.session_state.log_df.empty:
     st.dataframe(st.session_state.log_df)
     st.line_chart(st.session_state.log_df.set_index('Дата')['Вага'])
     st.bar_chart(st.session_state.log_df.set_index('Дата')['Активність'])
@@ -81,12 +78,11 @@ st.subheader('🛒 Автоматичний список покупок')
 days_selection = st.multiselect('📅 Обери дні для списку покупок:', menu['Дні'].unique(), default=[selected_day])
 if st.button('📝 Сформувати список покупок'):
     selected_days_menu = menu[menu['Дні'].isin(days_selection)]
-    products = selected_products = re.findall(r'([А-Яа-яЇїІіЄєҐґ\w]+)\s(\d+)\s?(г|шт)', ' '.join(selected_menu['Страва (рецепт, калорії, техкарта)']))
+    all_ingredients = ' '.join(selected_days_menu['Страва (рецепт, калорії, техкарта)'])
+    products = re.findall(r'([А-Яа-яЇїІіЄєҐґ\w]+)\s(\d+)\s?(г|шт)', all_ingredients)
     shopping_list = {}
     for product, amount, unit in products:
-        if product in shopping_list:
-            shopping_list[product] += int(amount)
-        else:
-            shopping_list[product] = int(amount)
+        key = f'{product} ({unit})'
+        shopping_list[key] = shopping_list.get(key, 0) + int(amount)
     for product, total in shopping_list.items():
-        st.write(f'- {product}: {total} г')
+        st.write(f'- {product}: {total}')
