@@ -61,8 +61,8 @@ if 'user' in st.session_state:
     menu = pd.read_csv('Харчування.csv', encoding='utf-8-sig').dropna()
 
     st.title('🍽️ Меню для Павла та Наталі 📅')
-    selected_day = st.selectbox('📅 День тижня:', menu['Дні'].unique())
-    filtered_menu = menu[menu['Дні'] == selected_day]
+    selected_days = st.multiselect('📅 Оберіть дні тижня для меню:', menu['Дні'].unique(), default=menu['Дні'].unique()[0])
+    filtered_menu = menu[menu['Дні'].isin(selected_days)]
 
     def extract_calories(text):
         matches = re.findall(r'(\d+)\s?ккал', text)
@@ -72,10 +72,20 @@ if 'user' in st.session_state:
     filtered_menu['Калорії (Наталя)'] = (filtered_menu['Калорії (Павло)'] * 0.8).astype(int)
 
     for _, row in filtered_menu.iterrows():
-        with st.expander(f"⏰ {row['Час прийому їжі']}"):
+        with st.expander(f"⏰ {row['Дні']} - {row['Час прийому їжі']}"):
             st.write(f"📖 {row['Страва (рецепт, калорії, техкарта)']}")
             st.write(f"🍽️ Павло: {row['Порція для чоловіка']} ({row['Калорії (Павло)']} ккал)")
             st.write(f"🍽️ Наталя: {row['Порція для дружини']} ({row['Калорії (Наталя)']} ккал)")
+
+    # Автоматичний список покупок
+    st.header('🛒 Автоматичний список покупок')
+    if st.button('Сформувати список покупок'):
+        ingredients = re.findall(r'(\w+)\s(\d+\s?(г|шт))', ' '.join(filtered_menu['Страва (рецепт, калорії, техкарта)']))
+        shopping_list = {}
+        for item, quantity, unit in ingredients:
+            key = f'{item} ({unit})'
+            shopping_list[key] = shopping_list.get(key, 0) + int(re.findall(r'\d+', quantity)[0])
+        st.write(shopping_list)
 
     # Калькулятор ІМТ
     st.sidebar.header('🧮 Калькулятор ІМТ')
@@ -84,28 +94,5 @@ if 'user' in st.session_state:
     bmi = weight / ((height / 100)**2)
     st.sidebar.metric('📌 Твій ІМТ:', f'{bmi:.2f}')
 
-    # Журнал ваги та активності
-    st.subheader('📝 Журнал ваги та активності')
-
-    date = st.date_input('📅 Дата')
-    weight_log = st.number_input('⚖️ Вага (кг)', 30.0, 200.0, step=0.1)
-    activity_log = st.slider('🏃‍♂️ Активність (хв)', 0, 180, 30)
-
-    if st.button('✅ Додати запис'):
-        c.execute('INSERT INTO logs VALUES (?, ?, ?, ?)', (st.session_state['user'], date.isoformat(), weight_log, activity_log))
-        conn.commit()
-        st.success('✅ Запис додано!')
-
-    logs_df = pd.read_sql('SELECT date AS Дата, weight AS Вага, activity AS Активність FROM logs WHERE user=?', conn, params=(st.session_state['user'],))
-    if not logs_df.empty:
-        st.dataframe(logs_df)
-        st.line_chart(logs_df.set_index('Дата')['Вага'])
-        st.bar_chart(logs_df.set_index('Дата')['Активність'])
-
-    # Push-нагадування
-    st.sidebar.header('🔔 Нагадування про прийоми їжі')
-    if st.sidebar.checkbox('Активувати нагадування'):
-        for meal in filtered_menu['Час прийому їжі'].unique():
-            st.sidebar.info(f'Час їсти: {meal}')
 else:
     st.warning('Будь ласка, авторизуйтесь або зареєструйтесь через бокову панель.')
