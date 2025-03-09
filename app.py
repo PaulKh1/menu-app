@@ -22,17 +22,12 @@ menu.dropna(inplace=True)
 
 st.markdown("<h2 style='text-align:center;'>🍽️ Меню для Павла та Наталі 📅</h2>", unsafe_allow_html=True)
 
-# Вибір дня тижня
-col_day, col_meal = st.columns(2)
-with col_day:
-    day = st.selectbox('📅 День тижня:', menu['Дні'].unique())
-with col_meal:
-    meal_type = st.radio('🥗 Прийом їжі:', ['Всі'] + list(menu['Час прийому їжі'].unique()), horizontal=True)
+# Вибір дня тижня та типу прийому їжі
+day = st.selectbox('📅 День тижня:', menu['Дні'].unique())
+meal_type = st.radio('🥗 Прийом їжі:', ['Всі'] + list(menu['Час прийому їжі'].unique()), horizontal=True)
 
-# Фільтрація меню
+# Далі фільтрація:
 filtered_menu = menu[menu['Дні'].str.lower() == day.lower()]
-if meal_type != 'Всі':
-    filtered_menu = filtered_menu[filtered_menu['Час прийому їжі'] == meal_type]
 
 # Функція витягування калорій
 def extract_calories(text):
