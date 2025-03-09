@@ -3,6 +3,7 @@ import pandas as pd
 import sqlite3
 import hashlib
 import re
+from datetime import datetime, timedelta
 
 # Конфігурація сторінки
 st.set_page_config(page_title='Меню харчування', layout='wide')
@@ -61,8 +62,11 @@ if 'user' in st.session_state:
     menu = pd.read_csv('Харчування.csv', encoding='utf-8-sig').dropna()
 
     st.title('🍽️ Меню для Павла та Наталі 📅')
-    selected_days = st.multiselect('📅 Оберіть дні тижня для меню:', menu['Дні'].unique(), default=menu['Дні'].unique()[0])
-    filtered_menu = menu[menu['Дні'].isin(selected_days)]
+    days_to_show = st.slider('📅 Виберіть кількість днів для меню:', 1, 7, 1)
+
+    base_date = datetime.now()
+    dates_list = [(base_date + timedelta(days=i)).strftime('%A') for i in range(days_to_show)]
+    filtered_menu = menu[menu['Дні'].isin(dates_list)]
 
     def extract_calories(text):
         matches = re.findall(r'(\d+)\s?ккал', text)
@@ -93,6 +97,5 @@ if 'user' in st.session_state:
     height = st.sidebar.number_input('Зріст (см):', 100, 220, 173)
     bmi = weight / ((height / 100)**2)
     st.sidebar.metric('📌 Твій ІМТ:', f'{bmi:.2f}')
-
 else:
     st.warning('Будь ласка, авторизуйтесь або зареєструйтесь через бокову панель.')
