@@ -36,29 +36,24 @@ def login(username, password):
 
 # Авторизація та реєстрація
 st.sidebar.header('🔐 Авторизація')
-login_mode = st.sidebar.radio('Вхід або Реєстрація:', ['Вхід', 'Реєстрація'])
-username = st.sidebar.text_input('Ім\'я користувача:')
+login_mode = st.sidebar.radio('Оберіть дію:', ['Вхід', 'Реєстрація'])
+username = st.sidebar.text_input("Ім'я користувача:")
 password = st.sidebar.text_input('Пароль:', type='password')
 
-if st.sidebar.button(login_button := 'Увійти' if login_mode := st.sidebar.radio("Оберіть дію:", ["Вхід", "Реєстрація"]) == 'Вхід' else 'Зареєструватися'):
-    c = conn.cursor()
-    if login_mode:
+if st.sidebar.button('Увійти' if login_mode == 'Вхід' else 'Зареєструватися'):
+    if login_mode == 'Вхід':
         if login(username, password):
             st.sidebar.success(f'Вхід успішний: {username}')
             st.session_state['user'] = username
         else:
             st.sidebar.error('Неправильний логін або пароль')
     else:
-        c.execute('SELECT * FROM users WHERE username=?', (username,))
-        if c.fetchone():
-            st.sidebar.error('Користувач з таким іменем вже існує!')
-        else:
-            create_user(username, hash_password(password))
+        if create_user(username, password):
             st.sidebar.success(f'Користувача {username} зареєстровано успішно!')
             st.session_state['user'] = username
+        else:
+            st.sidebar.error('Користувач з таким іменем вже існує!')
 
-if 'user' in st.session_state:
-    st.title('🍽️ Меню для Павла та Наталі 📅')
 
     # Завантаження меню
     menu = pd.read_csv('Харчування.csv', encoding='utf-8-sig').dropna()
